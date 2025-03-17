@@ -10,34 +10,51 @@ const isDev = process.env.NODE_ENV !== "production";
 
 // Browser configuration helper
 const getBrowserConfig = async () => {
-  const args = [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"];
-  let executablePath;
+  // Common arguments for all environments
+  const args = [
+    ...chromium.args,
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-web-security",
+  ];
 
-  if (isDev) {
-    switch (process.platform) {
-      case "win32":
-        executablePath =
-          "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-        break;
-      case "darwin":
-        executablePath =
-          "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-        break;
-      case "linux":
-        executablePath = "/usr/bin/google-chrome";
-        break;
-      default:
-        throw new Error(`Unsupported platform: ${process.platform}`);
-    }
-  } else {
-    executablePath = await chromium.executablePath;
+  // For production (Vercel) environment
+  if (!isDev) {
+    return {
+      args,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless,
+      defaultViewport: chromium.defaultViewport,
+      ignoreHTTPSErrors: true,
+    };
+  }
+
+  // For local development environment
+  let executablePath;
+  switch (process.platform) {
+    case "win32":
+      executablePath =
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+      break;
+    case "darwin":
+      executablePath =
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+      break;
+    case "linux":
+      executablePath = "/usr/bin/google-chrome";
+      break;
+    default:
+      throw new Error(`Unsupported platform: ${process.platform}`);
   }
 
   return {
     args,
-    defaultViewport: chromium.defaultViewport,
     executablePath,
-    headless: isDev ? true : chromium.headless,
+    headless: true,
+    defaultViewport: { width: 1280, height: 800 },
+    ignoreHTTPSErrors: true,
   };
 };
 
